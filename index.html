@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <title>Gamepad Vibration Test</title>
+    <style>
+        body { font-family: sans-serif; text-align: center; padding-top: 50px; }
+        button { padding: 15px 30px; font-size: 18px; cursor: pointer; }
+        #status { margin-top: 20px; font-weight: bold; color: green; }
+    </style>
+</head>
+<body>
+
+    <h1>ทดสอบระบบสั่นจอยเกม</h1>
+    <p>1. เชื่อมต่อจอยบลูทูธเข้ากับ iPad</p>
+    <p>2. กดปุ่มใดก็ได้บนจอยเกม 1 ครั้งเพื่อเปิดใช้งาน</p>
+    <button onclick="triggerVibration()">คลิกที่นี่เพื่อกดสั่น (หรือกดปุ่ม X / A บนจอย)</button>
+    
+    <div id="status">รอการกดปุ่มบนจอย...</div>
+
+    <script>
+        let padIndex = null;
+
+        // ดักจับเมื่อมีการเชื่อมต่อจอย
+        window.addEventListener("gamepadconnected", (e) => {
+            console.log("จอยเชื่อมต่อแล้ว:", e.gamepad.id);
+            document.getElementById("status").innerText = "เชื่อมต่อจอยสำเร็จ! ลองกดปุ่มบนจอยเพื่อสั่น";
+        });
+
+        // ฟังก์ชันสั่งสั่น
+        function triggerVibration() {
+            const gamepads = navigator.getGamepads();
+            let hasVibrated = false;
+
+            for (let gp of gamepads) {
+                if (gp && gp.vibrationActuator) {
+                    gp.vibrationActuator.playEffect("dual-rumble", {
+                        startDelay: 0,
+                        duration: 400, // สั่น 0.4 วินาที
+                        strongMagnitude: 1.0,
+                        weakMagnitude: 1.0
+                    }).then(() => {
+                        document.getElementById("status").innerText = "จอยกำลังสั่น...";
+                    }).catch((err) => {
+                        document.getElementById("status").innerText = "เกิดข้อผิดพลาด: " + err.message;
+                    });
+                    hasVibrated = true;
+                    break;
+                }
+            }
+
+            if (!hasVibrated) {
+                document.getElementById("status").innerText = "ไม่พบระบบสั่นในจอย หรือเบราว์เซอร์ยังบล็อกอยู่";
+            }
+        }
+
+        // วนลูปเช็กการกดปุ่มบนจอย (Game Loop)
+        function updateLoop() {
+            const gamepads = navigator.getGamepads();
+            for (let gp of gamepads) {
+                if (gp) {
+                    // ถ้ามีการกดปุ่มใดๆ บนจอย ให้สั่งสั่นทันที
+                    for (let button of gp.buttons) {
+                        if (button.pressed) {
+                            triggerVibration();
+                        }
+                    }
+                }
+            }
+            requestAnimationFrame(updateLoop);
+        }
+        
+        requestAnimationFrame(updateLoop);
+    </script>
+</body>
+</html>
