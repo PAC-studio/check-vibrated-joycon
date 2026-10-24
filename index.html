@@ -28,31 +28,45 @@
         });
 
         // ฟังก์ชันสั่งสั่น
-        function triggerVibration() {
-            const gamepads = navigator.getGamepads();
-            let hasVibrated = false;
+    function triggerVibration() {
+    // เช็กก่อนเลยว่ารันบน HTTPS ไหม
+    if (window.isSecureContext === false) {
+        document.getElementById("status").innerText = "❌ Safari บล็อกระบบสั่น เพราะเว็บนี้ไม่ใช่ HTTPS!";
+        return;
+    }
 
-            for (let gp of gamepads) {
-                if (gp && gp.vibrationActuator) {
-                    gp.vibrationActuator.playEffect("dual-rumble", {
-                        startDelay: 0,
-                        duration: 400, // สั่น 0.4 วินาที
-                        strongMagnitude: 1.0,
-                        weakMagnitude: 1.0
-                    }).then(() => {
-                        document.getElementById("status").innerText = "จอยกำลังสั่น...";
-                    }).catch((err) => {
-                        document.getElementById("status").innerText = "เกิดข้อผิดพลาด: " + err.message;
-                    });
-                    hasVibrated = true;
-                    break;
-                }
-            }
+    const gamepads = navigator.getGamepads();
+    let gamepadFound = false;
+    let actuatorFound = false;
 
-            if (!hasVibrated) {
-                document.getElementById("status").innerText = "ไม่พบระบบสั่นในจอย หรือเบราว์เซอร์ยังบล็อกอยู่";
+    for (let gp of gamepads) {
+        if (gp) {
+            gamepadFound = true;
+            // เช็กดูว่า Safari มองเห็นฟังก์ชันสั่นของจอยรุ่นนี้ไหม
+            if (gp.vibrationActuator) {
+                actuatorFound = true;
+                gp.vibrationActuator.playEffect("dual-rumble", {
+                    startDelay: 0,
+                    duration: 400,
+                    strongMagnitude: 1.0,
+                    weakMagnitude: 1.0
+                }).then(() => {
+                    document.getElementById("status").innerText = "✅ จอยกำลังสั่น...";
+                }).catch((err) => {
+                    document.getElementById("status").innerText = "เกิดข้อผิดพลาด: " + err.message;
+                });
+                break;
             }
         }
+    }
+
+    if (!gamepadFound) {
+        document.getElementById("status").innerText = "❌ ไม่พบจอยเชื่อมต่ออยู่ (ลองกดปุ่มบนจอยซ้ำๆ)";
+    } else if (!actuatorFound) {
+        document.getElementById("status").innerText = "❌ เบราว์เซอร์รู้จักจอย แต่ไม่พบมอเตอร์สั่นในจอยรุ่นนี้";
+    }
+}
+
 
         // วนลูปเช็กการกดปุ่มบนจอย (Game Loop)
         function updateLoop() {
