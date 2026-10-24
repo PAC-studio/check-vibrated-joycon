@@ -19,8 +19,6 @@
     <div id="status">รอการกดปุ่มบนจอย...</div>
 
     <script>
-        let padIndex = null;
-
         // ดักจับเมื่อมีการเชื่อมต่อจอย
         window.addEventListener("gamepadconnected", (e) => {
             console.log("จอยเชื่อมต่อแล้ว:", e.gamepad.id);
@@ -28,57 +26,47 @@
         });
 
         // ฟังก์ชันสั่งสั่น
-  function triggerVibration() {
-    const gamepads = navigator.getGamepads();
-    let gamepadFound = false;
+        function triggerVibration() {
+            const gamepads = navigator.getGamepads();
+            let gamepadFound = false;
 
-    for (let gp of gamepads) {
-        if (gp) {
-            gamepadFound = true;
-            
-            // 1. ลองวิธีมาตรฐาน (dual-rumble)
-            if (gp.vibrationActuator && typeof gp.vibrationActuator.playEffect === 'function') {
-                gp.vibrationActuator.playEffect("dual-rumble", {
-                    startDelay: 0, duration: 400, strongMagnitude: 1.0, weakMagnitude: 1.0
-                });
-                document.getElementById("status").innerText = "✅ สั่นด้วย playEffect";
-                return;
+            for (let gp of gamepads) {
+                if (gp) {
+                    gamepadFound = true;
+                    
+                    // 1. ลองวิธีมาตรฐาน (dual-rumble)
+                    if (gp.vibrationActuator && typeof gp.vibrationActuator.playEffect === 'function') {
+                        gp.vibrationActuator.playEffect("dual-rumble", {
+                            startDelay: 0, duration: 400, strongMagnitude: 1.0, weakMagnitude: 1.0
+                        });
+                        document.getElementById("status").innerText = "✅ สั่นด้วย playEffect";
+                        return;
+                    }
+                    
+                    // 2. ลองวิธีสำรอง (gp.vibrate)
+                    if (gp.vibrate && typeof gp.vibrate === 'function') {
+                        gp.vibrate(400);
+                        document.getElementById("status").innerText = "✅ สั่นด้วย gp.vibrate";
+                        return;
+                    }
+                    
+                    // 3. ลองสั่งผ่านระบบสั่นของทริกเกอร์จอย
+                    if (gp.vibrationActuator && typeof gp.vibrationActuator.playTriggerEffect === 'function') {
+                        gp.vibrationActuator.playTriggerEffect("trigger-rumble", {
+                            duration: 400, leftTriggerMagnitude: 1.0, rightTriggerMagnitude: 1.0
+                        });
+                        document.getElementById("status").innerText = "✅ สั่นด้วย playTriggerEffect";
+                        return;
+                    }
+                }
             }
-            
-            // 2. ลองวิธีสำรอง (จอยบางรุ่นบน iOS จะผูกฟังก์ชัน vibrate ไว้ตรงๆ ที่ตัวจอย)
-            if (gp.vibrate && typeof gp.vibrate === 'function') {
-                gp.vibrate(400);
-                document.getElementById("status").innerText = "✅ สั่นด้วย gp.vibrate";
-                return;
-            }
-            
-            // 3. ลองสั่งผ่านระบบสั่นของทริกเกอร์จอย (ถ้าเปิด Feature Flag ตัวบนสุดไว้)
-            if (gp.vibrationActuator && typeof gp.vibrationActuator.playTriggerEffect === 'function') {
-                // สั่งสั่นที่ปุ่ม L2/R2 แทน
-                gp.vibrationActuator.playTriggerEffect("trigger-rumble", {
-                    duration: 400, leftTriggerMagnitude: 1.0, rightTriggerMagnitude: 1.0
-                });
-                document.getElementById("status").innerText = "✅ สั่นด้วย playTriggerEffect";
-                return;
+
+            if (!gamepadFound) {
+                document.getElementById("status").innerText = "❌ ไม่พบจอยเชื่อมต่ออยู่ (ลองกดปุ่มบนจอยซ้ำๆ)";
+            } else {
+                document.getElementById("status").innerText = "❌ เบราว์เซอร์รู้จักจอย แต่ไม่พบมอเตอร์สั่นหรือโดน Safari บล็อกอยู่";
             }
         }
-    }
-
-    if (!gamepadFound) {
-        document.getElementById("status").innerText = "❌ ไม่พบจอย";
-    } else {
-        document.getElementById("status").innerText = "❌ เบราว์เซอร์บล็อกหรือจอยไม่เข้าคู่กับ Safari ลองเปลี่ยนโหมดจอย";
-    }
-}
-
-
-    if (!gamepadFound) {
-        document.getElementById("status").innerText = "❌ ไม่พบจอยเชื่อมต่ออยู่ (ลองกดปุ่มบนจอยซ้ำๆ)";
-    } else if (!actuatorFound) {
-        document.getElementById("status").innerText = "❌ เบราว์เซอร์รู้จักจอย แต่ไม่พบมอเตอร์สั่นในจอยรุ่นนี้";
-    }
-}
-
 
         // วนลูปเช็กการกดปุ่มบนจอย (Game Loop)
         function updateLoop() {
